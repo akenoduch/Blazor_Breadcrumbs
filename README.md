@@ -141,12 +141,6 @@ Feel free to open issues and submit pull requests for improvements or bug fixes.
 
 ---
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
 ## Acknowledgments
 
 Thanks to the Blazor and .NET community for their resources and contributions, enabling seamless development of this component.
