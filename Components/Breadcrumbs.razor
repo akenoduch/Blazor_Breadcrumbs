@@ -1,0 +1,135 @@
+﻿@inject NavigationManager NavigationManager
+@inject BreadcrumbService BreadcrumbService
+@inject IJSRuntime JSRuntime
+
+<nav aria-label="breadcrumb" class="@BreadcrumbClass">
+    <ol class="breadcrumb">
+        @if (Items.Count == 0)
+        {
+            <li class="breadcrumb-item">No items</li>
+        }
+        else
+        {
+            @foreach (var item in Items)
+            {
+                <li class="breadcrumb-item">
+                    @if (!string.IsNullOrEmpty(item.Url))
+                    {
+                        <a href="javascript:void(0)" @onclick="() => OnBreadcrumbClick(item.Url)">@item.Title</a>
+                    }
+                    else
+                    {
+                        <span>@item.Title</span>
+                    }
+                </li>
+            }
+        }
+    </ol>
+</nav>
+
+@code {
+    [Parameter]
+    public string BreadcrumbClass { get; set; } = "";
+
+    [Parameter]
+    public Func<string, List<BreadcrumbItem>>? GetBreadcrumbItems { get; set; }
+
+    private List<BreadcrumbItem> Items { get; set; } = new List<BreadcrumbItem>();
+    private bool _isFirstRender = true;
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Breadcrumbs component initialized.");
+        NavigationManager.LocationChanged += OnLocationChanged;
+        BreadcrumbService.OnBreadcrumbsCleared += ClearItems;
+        BreadcrumbService.RegisterBreadcrumb();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isFirstRender)
+        {
+            Console.WriteLine("Breadcrumbs first render.");
+            _isFirstRender = false;
+            await LoadBreadcrumbsFromCookies(NavigationManager.Uri);
+            UpdateItems(NavigationManager.Uri);
+            var state = await BreadcrumbService.LoadPageState(NavigationManager.Uri);
+            // Carregar o estado da página usando o state, se necessário
+            StateHasChanged();
+        }
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        Console.WriteLine("Breadcrumbs location changed to: " + e.Location);
+        BreadcrumbService.RegisterBreadcrumb();
+        UpdateItems(e.Location);
+        SaveBreadcrumbsToCookies(e.Location); // Passando o e.Location aqui
+    }
+
+    private void UpdateItems(string currentUri)
+    {
+        Console.WriteLine("Updating breadcrumbs for URI: " + currentUri);
+        if (GetBreadcrumbItems != null)
+        {
+            var newItems = GetBreadcrumbItems(currentUri);
+            foreach (var newItem in newItems)
+            {
+                if (!Items.Any(item => item.Url == newItem.Url))
+                {
+                    Items.Add(newItem);
+                }
+            }
+            Items = Items.DistinctBy(item => item.Url).ToList();
+        }
+        else
+        {
+            Items.Clear();
+        }
+    }
+
+    private void OnBreadcrumbClick(string url)
+    {
+        Console.WriteLine("Breadcrumb clicked with URL: " + url);
+        var index = Items.FindIndex(item => item.Url == url);
+        if (index >= 0)
+        {
+            Items = Items.Take(index + 1).ToList();
+            SaveBreadcrumbsToCookies(NavigationManager.Uri);
+            NavigationManager.NavigateTo(url);
+        }
+    }
+
+    private async Task LoadBreadcrumbsFromCookies(string currentUri)
+    {
+        Console.WriteLine("Loading breadcrumbs from cookies for URI: " + currentUri);
+        Items = await BreadcrumbService.LoadBreadcrumbsFromCookies(currentUri);
+    }
+
+    private async Task SaveBreadcrumbsToCookies(string currentUri)
+    {
+        Console.WriteLine("Saving breadcrumbs to cookies for URI: " + currentUri);
+        await BreadcrumbService.SaveBreadcrumbsToCookies(currentUri, Items);
+    }
+
+    private void ClearItems()
+    {
+        Console.WriteLine("Clearing breadcrumbs items.");
+        Items.Clear();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Breadcrumbs component disposed.");
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        BreadcrumbService.OnBreadcrumbsCleared -= ClearItems;
+    }
+
+    public class BreadcrumbItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Url { get; set; }
+    }
+}
+

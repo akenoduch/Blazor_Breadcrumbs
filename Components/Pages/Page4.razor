@@ -1,0 +1,20 @@
+﻿@page "/page4"
+@inject BreadcrumbService BreadcrumbService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Page 4</PageTitle>
+
+<div id="breadcrumbs">
+    <Breadcrumbs GetBreadcrumbItems="BreadcrumbService.GetBreadcrumbItems"></Breadcrumbs>
+</div>
+
+<h3>Page 4</h3>
+
+<button @onclick="NavigateToPage">Page5</button>
+
+@code {
+    private void NavigateToPage()
+    {
+        NavigationManager.NavigateTo("/page5");
+    }
+}

@@ -1,0 +1,13 @@
+﻿@page "/counter"
+@inject NavigationManager NavigationManager
+
+<PageTitle>Counter</PageTitle>
+
+<button @onclick="NavigateToPage1">Page4</button>
+
+@code {
+    private void NavigateToPage1()
+    {
+        NavigationManager.NavigateTo("/page4");
+    }
+}
